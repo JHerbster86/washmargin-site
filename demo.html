@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Limited WashMargin demo: explore simple pressure-washing estimate math without sharing any personal data."><title>WashMargin — Limited Interactive Demo</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1020;--surface:#161d31;--line:#35405a;--text:#f2f5ff;--muted:#aab7ce;--lav:#9a8dff;--mint:#4ce0b3}*{box-sizing:border-box}body{background:radial-gradient(circle at top right,#22234d,#0c1020 70%);color:var(--text);font:15px/1.6 system-ui,"Segoe UI",Arial;margin:0}a{color:#bebaff;text-decoration:none}header,main,footer{max-width:950px;margin:auto;padding:23px 22px}header{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid #29344d}.brand{font-size:16px;font-weight:850;letter-spacing:.07em}.brand b{color:var(--mint)}.pill{border:1px solid #4d4876;background:#282749;border-radius:20px;padding:6px 12px;font-size:11px;color:#c9c1ff}h1{letter-spacing:-.055em;font-size:clamp(32px,5vw,52px);line-height:1.1;margin:16px 0}h1 span{color:var(--lav)}.intro{color:var(--muted);max-width:730px}article{background:#151d31;border:1px solid #37435d;border-radius:18px;padding:25px;margin:22px 0;box-shadow:0 20px 60px #0004}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}label{display:block;font-weight:650;font-size:13px;margin-bottom:6px}input,select{background:#0e1426;border:1px solid #45516b;color:white;border-radius:9px;width:100%;height:44px;padding:8px 12px;font-size:16px}small{display:block;margin-top:5px;color:var(--muted);font-size:11px}hr{border:0;border-top:1px solid #344056;margin:22px 0}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.metric{background:#0d182b;border:1px solid #313e59;padding:15px;border-radius:10px}.metric .label{font-size:12px;color:#b4c0d4}.metric strong{display:block;color:#fff;font-size:clamp(21px,3.5vw,31px);margin-top:4px;font-variant-numeric:tabular-nums}.metric:nth-child(3) strong{color:var(--mint)}.disclaimer{color:#aebad0;font-size:12px}footer{color:#94a6c2;font-size:12px}.button{border:1px solid #9288ff;background:#4c427e;border-radius:9px;display:inline-block;color:white;padding:10px 15px;font-weight:650;margin-top:12px}.notices{background:#202b43;border-left:3px solid var(--lav);padding:13px;border-radius:0 8px 8px 0;color:#d7e1f1;font-size:13px}.error{color:#ffb0b0;min-height:20px}strong b{color:var(--mint)}@media(max-width:640px){.grid,.metrics{grid-template-columns:1fr}article{padding:18px}header{flex-wrap:wrap}main{padding:20px 16px}}
+</style></head>
+<body><header><a href="index.html" class="brand">WASHMARGIN<b>.</b></a><span class="pill">LIMITED PUBLIC DEMO</span></header>
+<main><p><a href="index.html">← Back to WashMargin</a></p><h1>Take one job from <span>cost to quote.</span></h1><p class="intro">Change the example numbers to see how basic pricing math works. This mini demo has no customer details, saved business settings, multi-surface estimates, or quote/PDF export. Those are part of the proposed full product.</p>
+<article><div class="grid">
+<div><label for="surface">Surface type</label><select id="surface"><option value="Concrete driveway">Concrete driveway</option><option value="Patio or walkway">Patio or walkway</option><option value="House siding">House siding</option></select></div>
+<div><label for="area">Surface area (sq ft)</label><input id="area" type="number" value="1200" min="0" max="10000000" step="50"><small>For illustration, not a measured job</small></div>
+<div><label for="rate">Your price per sq ft ($)</label><input id="rate" type="number" value="0.24" min="0" max="100000" step="0.01"></div>
+<div><label for="labor">Total job labor cost ($)</label><input id="labor" type="number" value="95" min="0" max="1000000" step="5"></div>
+<div><label for="other">Supplies, travel &amp; overhead ($)</label><input id="other" type="number" value="52" min="0" max="1000000" step="5"></div>
+<div><label for="margin">Target operating margin (%)</label><input id="margin" type="number" value="30" min="0" max="90" step="1"></div>
+</div><div class="error" id="error" role="status"></div><hr><div class="metrics"><div class="metric"><span class="label">Direct modeled cost</span><strong id="cost">—</strong></div><div class="metric"><span class="label">Suggested quote*</span><strong id="quote">—</strong></div><div class="metric"><span class="label">Modeled profit</span><strong id="profit">—</strong></div></div><p class="disclaimer" id="detail">—</p><div class="notices">* Suggested quote = the greater of surface-based quote or cost / (1 − target margin), rounded up to $5. Real quotes must account for insurance, labor burden, fees, taxes, complexity, minimum charges, and local costs. These numbers are examples, not recommended market rates.</div>
+<a href="index.html#pricing" class="button">See product concept →</a></article>
+</main><footer>Private customer information is not requested or stored. No analytics, checkout, email capture, or API connection. This demo is free and doesn't generate a binding estimate.</footer>
+<script>
+'use strict';
+const IDs=['area','rate','labor','other','margin'];
+const money=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+function update(){
+ const values=IDs.map(id=>Number(document.getElementById(id).value));
+ const err=document.getElementById('error');
+ if(values.some((v,i)=>!Number.isFinite(v)||v<0||(i===4&&v>90))){
+   err.textContent='Enter nonnegative values, and use a margin between 0% and 90%.';
+   for(const id of ['cost','quote','profit'])document.getElementById(id).textContent='—';
+   document.getElementById('detail').textContent='—';
+   return;
+ }
+ err.textContent='';
+ const [area,rate,labor,other,margin]=values;
+ const cost=labor+other, based=area*rate;
+ const rounded=Math.ceil(Math.max(based,cost/(1-margin/100))/5)*5;
+ const profit=rounded-cost;
+ document.getElementById('cost').textContent=money.format(cost);
+ document.getElementById('quote').textContent=money.format(rounded);
+ document.getElementById('profit').textContent=money.format(profit);
+ document.getElementById('detail').textContent='Surface-rate subtotal: '+money.format(based)+'. This demo omits payment processing costs and other full-product features.';
+}
+IDs.forEach(id=>document.getElementById(id).addEventListener('input',update));update();
+</script></body></html>
